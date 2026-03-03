@@ -411,11 +411,20 @@ export default function ClinicalPage() {
         : `/api/doctor/patients/${selectedPatientId}/test-results`;
       const method = editingId ? "PATCH" : "POST";
 
-      const res = await fetch(url, {
-        method,
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(newTestResult),
-      });
+      const doRequest = async () =>
+        fetch(url, {
+          method,
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(newTestResult),
+        });
+
+      let res = await doRequest();
+      if (res.status === 401) {
+        const refresh = await fetch("/api/auth/refresh", { method: "POST" });
+        if (refresh.ok) {
+          res = await doRequest();
+        }
+      }
 
       if (!res.ok) throw new Error("Failed");
       addToast("success", editingId ? "Result updated" : "Result added");

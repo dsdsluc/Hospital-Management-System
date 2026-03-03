@@ -1,5 +1,8 @@
 import { NextResponse } from "next/server";
-import { requireAdmin, AuthenticatedRequest } from "@/lib/permissions/admin.permission";
+import {
+  requireAdmin,
+  AuthenticatedRequest,
+} from "@/lib/permissions/admin.permission";
 import { prisma } from "@/lib/prisma";
 import { Role, UserStatus } from "@prisma/client";
 
@@ -20,20 +23,20 @@ export async function GET(request: AuthenticatedRequest) {
 
   if (role) where.role = role;
   if (status) where.status = status;
-  
+
   if (search) {
     where.OR = [
       { email: { contains: search, mode: "insensitive" } },
-      { 
-        doctor: { 
-          name: { contains: search, mode: "insensitive" } 
-        } 
+      {
+        doctorProfile: {
+          name: { contains: search, mode: "insensitive" },
+        },
       },
-      { 
-        patient: { 
-          name: { contains: search, mode: "insensitive" } 
-        } 
-      }
+      {
+        patientProfile: {
+          name: { contains: search, mode: "insensitive" },
+        },
+      },
     ];
   }
 
@@ -48,8 +51,8 @@ export async function GET(request: AuthenticatedRequest) {
           status: true,
           lastLoginAt: true,
           createdAt: true,
-          doctor: { select: { name: true } },
-          patient: { select: { name: true } },
+          doctorProfile: { select: { name: true } },
+          patientProfile: { select: { name: true } },
         },
         skip,
         take: limit,
@@ -58,14 +61,14 @@ export async function GET(request: AuthenticatedRequest) {
       prisma.user.count({ where }),
     ]);
 
-    const formattedUsers = users.map(user => ({
+    const formattedUsers = users.map((user) => ({
       id: user.id,
       email: user.email,
       role: user.role,
       status: user.status,
       lastLoginAt: user.lastLoginAt,
       createdAt: user.createdAt,
-      name: user.doctor?.name || user.patient?.name || "N/A", // Fallback for pure admins or pending users
+      name: user.doctorProfile?.name || user.patientProfile?.name || "N/A",
     }));
 
     return NextResponse.json({
@@ -79,6 +82,9 @@ export async function GET(request: AuthenticatedRequest) {
     });
   } catch (error) {
     console.error("Failed to fetch users", error);
-    return NextResponse.json({ error: "Failed to fetch users" }, { status: 500 });
+    return NextResponse.json(
+      { error: "Failed to fetch users" },
+      { status: 500 },
+    );
   }
 }
