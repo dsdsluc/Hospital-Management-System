@@ -1,0 +1,20 @@
+{
+  "general": {
+    "hospitalName": "MedCore Hospital",
+    "address": "123 Healthcare Blvd, Medical City, MC 10101",
+    "contactEmail": "admin@medcore.com",
+    "contactPhone": "+1 (555) 123-4567",
+    "website": "https://medcore.com"
+  },
+  "security": {
+    "sessionTimeoutMinutes": 30,
+    "maxLoginAttempts": 5,
+    "passwordMinLength": 8,
+    "requireSpecialChar": true
+  },
+  "notifications": {
+    "enableEmailAlerts": true,
+    "enableSmsAlerts": false,
+    "systemMaintenanceMode": false
+  }
+}
