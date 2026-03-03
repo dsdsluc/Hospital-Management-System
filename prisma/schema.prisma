@@ -19,12 +19,6 @@ enum UserStatus {
   PENDING_APPROVAL
 }
 
-enum Gender {
-  MALE
-  FEMALE
-  OTHER
-}
-
 enum AppointmentStatus {
   REQUESTED
   CONFIRMED
@@ -32,269 +26,186 @@ enum AppointmentStatus {
   IN_PROGRESS
   COMPLETED
   CANCELLED
-  NO_SHOW
   RESCHEDULED
+  NO_SHOW
+}
+
+enum Gender {
+  MALE
+  FEMALE
+  OTHER
 }
 
 model User {
-  id            String    @id @default(cuid())
-  email         String    @unique
-  passwordHash  String
-  role          Role
-  status        UserStatus @default(ACTIVE)
-  
-  // Security & Audit
-  loginAttempts Int       @default(0)
-  lockedUntil   DateTime?
-  lastLoginAt   DateTime?
-  emailVerified DateTime?
-  
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt @default(now())
-  deletedAt     DateTime? // Soft delete
-
-  doctor        Doctor?
-  patient       Patient?
-  
-  refreshTokens RefreshToken[]
-
-  @@index([email])
-  @@index([role, status])
-}
-
-model RefreshToken {
-  id          String   @id @default(cuid())
-  token       String   @unique
-  userId      String
-  expiresAt   DateTime
-  revoked     Boolean  @default(false)
-  createdAt   DateTime @default(now())
-  replacedBy  String?  // For rotation audit
-  
-  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  
-  @@index([token])
-  @@index([userId])
-}
-
-model Doctor {
-  id              String     @id @default(cuid())
-  userId          String     @unique
-  name            String
-  specialization  String?    // Optional for pending doctors
-  departmentId    String?    // Optional for pending doctors
-  licenseNo       String?    @unique // Optional for pending doctors
-  contact         String?
-  
-  user            User       @relation(fields: [userId], references: [id], onDelete: Cascade)
-  department      Department? @relation("DepartmentMembers", fields: [departmentId], references: [id])
-  headsDepartment Department? @relation("DepartmentHead")
-  
-  appointments    Appointment[]
-  patients        Patient[]   @relation("DoctorPatients")
-  medicalRecords  MedicalRecord[]
-  prescriptions   Prescription[]
-  orderedTests    TestResult[] @relation("OrderedTests")
-  schedules       DoctorSchedule[]
-  
-  createdAt       DateTime   @default(now())
-  updatedAt       DateTime   @updatedAt @default(now())
+  id              String   @id @default(uuid())
+  email           String   @unique
+  passwordHash    String
+  role            Role
+  status          UserStatus @default(ACTIVE)
+  loginAttempts   Int      @default(0)
+  lockedUntil     DateTime?
+  lastLoginAt     DateTime?
+  emailVerified   DateTime?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
   deletedAt       DateTime?
 
-  @@index([departmentId])
-  @@index([name])
-  @@index([specialization])
-}
-
-model DoctorSchedule {
-  id        String @id @default(cuid())
-  doctorId  String
-  dayOfWeek Int    // 0 = Sunday, 1 = Monday, etc.
-  startTime String // HH:mm format
-  endTime   String // HH:mm format
-  isActive  Boolean @default(true)
-
-  doctor    Doctor @relation(fields: [doctorId], references: [id])
-
-  @@index([doctorId])
+  patientProfile  Patient?
+  doctorProfile   Doctor?
+  sessions        Session[]
+  auditLogs       AuditLog[]
 }
 
 model Patient {
-  id               String     @id @default(cuid())
-  userId           String     @unique
+  id               String   @id @default(uuid())
+  userId           String   @unique
+  user             User     @relation(fields: [userId], references: [id])
   name             String
-  dob              DateTime?
   gender           Gender?
+  dob              DateTime?
   contact          String?
   address          String?
   emergencyContact String?
   primaryDoctorId  String?
-  
-  user             User       @relation(fields: [userId], references: [id], onDelete: Cascade)
-  primaryDoctor    Doctor?    @relation("DoctorPatients", fields: [primaryDoctorId], references: [id])
-  
+  primaryDoctor    Doctor?  @relation(fields: [primaryDoctorId], references: [id])
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+  deletedAt        DateTime?
+
   appointments     Appointment[]
   medicalRecords   MedicalRecord[]
   prescriptions    Prescription[]
   testResults      TestResult[]
-  
-  createdAt        DateTime   @default(now())
-  updatedAt        DateTime   @updatedAt @default(now())
-  deletedAt        DateTime?
+}
 
-  @@index([name])
-  @@index([primaryDoctorId])
+model Doctor {
+  id             String   @id @default(uuid())
+  userId         String   @unique
+  user           User     @relation(fields: [userId], references: [id])
+  name           String
+  specialization String
+  licenseNo      String?
+  contact        String?
+  departmentId   String?
+  department     Department? @relation(fields: [departmentId], references: [id])
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  appointments   Appointment[]
+  patients       Patient[]
+  medicalRecords MedicalRecord[]
+  prescriptions  Prescription[]
+  testResults    TestResult[]
+  managedDepartments Department[] @relation("DepartmentHead")
 }
 
 model Department {
-  id            String    @id @default(cuid())
-  name          String    @unique
-  description   String?
-  headDoctorId  String?   @unique
+  id           String  @id @default(uuid())
+  name         String  @unique
+  description  String?
+  headDoctorId String? @unique
+  headDoctor   Doctor? @relation("DepartmentHead", fields: [headDoctorId], references: [id])
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
   
-  headDoctor    Doctor?   @relation("DepartmentHead", fields: [headDoctorId], references: [id])
-  doctors       Doctor[]  @relation("DepartmentMembers")
-  appointments  Appointment[]
-  
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt @default(now())
-  deletedAt     DateTime?
-
-  @@index([name])
+  doctors      Doctor[]
+  appointments Appointment[]
 }
 
 model Appointment {
-  id            String            @id @default(cuid())
-  patientId     String
-  doctorId      String
-  departmentId  String
-  scheduledAt   DateTime
-  status        AppointmentStatus @default(REQUESTED)
-  notes         String?
-  reason        String?
-  
-  // Timestamps for workflow
-  checkedInAt   DateTime?
-  startedAt     DateTime?
-  completedAt   DateTime?
-  cancelledAt   DateTime?
-  cancelledById String?
-  cancellationReason String?
-  rescheduledFromId String?
+  id           String  @id @default(uuid())
+  patientId    String
+  doctorId     String
+  departmentId String?
+  patient      Patient @relation(fields: [patientId], references: [id])
+  doctor       Doctor  @relation(fields: [doctorId], references: [id])
+  department   Department? @relation(fields: [departmentId], references: [id])
 
-  // Optimistic Concurrency Control
-  version       Int               @default(1)
+  status       AppointmentStatus
+  scheduledAt  DateTime
+  reason       String?
+  notes        String?
+  version      Int      @default(0)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  deletedAt    DateTime?
+  cancelledAt  DateTime?
   
-  patient       Patient           @relation(fields: [patientId], references: [id])
-  doctor        Doctor            @relation(fields: [doctorId], references: [id])
-  department    Department        @relation(fields: [departmentId], references: [id])
-  visit         Visit?
-  
-  createdAt     DateTime          @default(now())
-  updatedAt     DateTime          @updatedAt @default(now())
-  deletedAt     DateTime?
-
-  @@index([doctorId, scheduledAt])
-  @@index([patientId, scheduledAt])
-  @@index([departmentId, scheduledAt])
-  @@index([status])
-  @@index([scheduledAt])
+  visit        Visit?
 }
 
 model Visit {
-  id            String      @id @default(cuid())
-  appointmentId String      @unique
-  startedAt     DateTime
-  endedAt       DateTime?
-  roomNumber    String?
-
+  id            String   @id @default(uuid())
+  appointmentId String   @unique
   appointment   Appointment @relation(fields: [appointmentId], references: [id])
+  roomNumber    String?
+  notes         String?
+  prescription  String?
+  diagnosis     String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
 }
 
 model MedicalRecord {
-  id            String   @id @default(cuid())
+  id            String   @id @default(uuid())
   patientId     String
   doctorId      String
-  encounterDate DateTime @default(now())
-  diagnosis     String
-  allergies     String?
-  vitals        Json?    // { bp: "120/80", heartRate: 72, temp: 36.6, weight: 70 }
-  filesRef      String?
-  
-  // Optimistic Concurrency Control
-  version       Int      @default(1)
-  
   patient       Patient  @relation(fields: [patientId], references: [id])
   doctor        Doctor   @relation(fields: [doctorId], references: [id])
-  
-  prescriptions Prescription[]
-  testResults   TestResult[]
-  
+  diagnosis     String
+  encounterDate DateTime
+  notes         String?
+  vitals        Json?
   createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt @default(now())
-  deletedAt     DateTime?
-
-  @@index([patientId])
-  @@index([doctorId])
-  @@index([encounterDate])
-}
-
-model Prescription {
-  id               String        @id @default(cuid())
-  medicalRecordId  String
-  patientId        String
-  doctorId         String
-  medications      Json          // [{ name: "Amoxicillin", dosage: "500mg", freq: "3x/day", duration: "7 days" }]
-  instructions     String?
-  
-  medicalRecord    MedicalRecord @relation(fields: [medicalRecordId], references: [id], onDelete: Cascade)
-  patient          Patient       @relation(fields: [patientId], references: [id])
-  doctor           Doctor        @relation(fields: [doctorId], references: [id])
-  
-  createdAt        DateTime      @default(now())
-  updatedAt        DateTime      @updatedAt @default(now())
-  deletedAt        DateTime?
-
-  @@index([medicalRecordId])
-  @@index([patientId])
+  updatedAt     DateTime @updatedAt
 }
 
 model TestResult {
-  id                  String        @id @default(cuid())
-  medicalRecordId     String
-  patientId           String
-  type                String
-  orderedByDoctorId   String
-  resultSummary       String?
-  fileRef             String?
-  reportedAt          DateTime      @default(now())
+  id            String   @id @default(uuid())
+  patientId     String
+  doctorId      String?
+  patient       Patient  @relation(fields: [patientId], references: [id])
+  doctor        Doctor?  @relation(fields: [doctorId], references: [id])
   
-  medicalRecord       MedicalRecord @relation(fields: [medicalRecordId], references: [id], onDelete: Cascade)
-  patient             Patient       @relation(fields: [patientId], references: [id])
-  orderedByDoctor     Doctor        @relation("OrderedTests", fields: [orderedByDoctorId], references: [id])
+  type          String
+  resultSummary String?
+  details       Json?
+  reportedAt    DateTime?
   
-  createdAt           DateTime      @default(now())
-  updatedAt           DateTime      @updatedAt @default(now())
-  deletedAt           DateTime?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+}
 
-  @@index([medicalRecordId])
-  @@index([patientId])
-  @@index([type])
+model Prescription {
+  id        String   @id @default(uuid())
+  patientId String
+  doctorId  String
+  patient   Patient  @relation(fields: [patientId], references: [id])
+  doctor    Doctor   @relation(fields: [doctorId], references: [id])
+  medications Json?
+  instructions String?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+}
+
+model Session {
+  id         String   @id @default(uuid())
+  userId     String
+  user       User     @relation(fields: [userId], references: [id])
+  refreshToken String @unique
+  userAgent  String?
+  ip         String?
+  createdAt  DateTime @default(now())
+  expiresAt  DateTime
 }
 
 model AuditLog {
-  id        String   @id @default(cuid())
+  id        String   @id @default(uuid())
   userId    String?
+  user      User?    @relation(fields: [userId], references: [id])
   action    String
   entity    String
   entityId  String?
-  timestamp DateTime @default(now())
   metadata  Json?
-  ipAddress String?
-  userAgent String?
-  
-  @@index([userId])
-  @@index([entity, entityId])
-  @@index([timestamp])
-  @@index([action])
+  createdAt DateTime @default(now())
 }
