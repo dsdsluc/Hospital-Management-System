@@ -263,4 +263,49 @@ export class PatientService {
 
     return { success: true };
   }
+
+  static async reconcileMissingPatients() {
+    // Find users with role PATIENT; we'll check per-user if a Patient record exists
+    const orphanUsers = await prisma.user.findMany({
+      where: {
+        role: "PATIENT",
+        deletedAt: null,
+      },
+    });
+
+    const results = {
+      created: 0,
+      errors: 0,
+    };
+
+    for (const user of orphanUsers) {
+      try {
+        // Skip if patient profile already exists
+        const existing = await prisma.patient.findFirst({
+          where: { userId: user.id },
+        });
+        if (existing) continue;
+
+        const displayName = (user.email?.split("@")[0] ?? "Unknown Patient")
+          .replace(/[-_.]/g, " ")
+          .replace(/\b\w/g, (c) => c.toUpperCase());
+
+        await prisma.patient.create({
+          data: {
+            userId: user.id,
+            name: displayName,
+          },
+        });
+        results.created++;
+      } catch (error) {
+        console.error(
+          `Failed to create patient profile for user ${user.id}:`,
+          error,
+        );
+        results.errors++;
+      }
+    }
+
+    return results;
+  }
 }
