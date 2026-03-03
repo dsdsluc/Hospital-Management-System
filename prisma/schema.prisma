@@ -54,6 +54,7 @@ model User {
   doctorProfile   Doctor?
   sessions        Session[]
   auditLogs       AuditLog[]
+  refreshTokens   RefreshToken[]
 }
 
 model Patient {
@@ -83,19 +84,21 @@ model Doctor {
   userId         String   @unique
   user           User     @relation(fields: [userId], references: [id])
   name           String
-  specialization String
+  specialization String?
   licenseNo      String?
   contact        String?
   departmentId   String?
   department     Department? @relation(fields: [departmentId], references: [id])
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
+  deletedAt      DateTime?
 
   appointments   Appointment[]
   patients       Patient[]
   medicalRecords MedicalRecord[]
   prescriptions  Prescription[]
   testResults    TestResult[]
+  schedules      DoctorSchedule[]
   managedDepartments Department[] @relation("DepartmentHead")
 }
 
@@ -107,6 +110,7 @@ model Department {
   headDoctor   Doctor? @relation("DepartmentHead", fields: [headDoctorId], references: [id])
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
+  deletedAt    DateTime?
   
   doctors      Doctor[]
   appointments Appointment[]
@@ -207,5 +211,31 @@ model AuditLog {
   entity    String
   entityId  String?
   metadata  Json?
+  ipAddress String?
+  userAgent String?
+  timestamp DateTime @default(now())
   createdAt DateTime @default(now())
+}
+
+model RefreshToken {
+  id         String   @id @default(uuid())
+  token      String   @unique
+  userId     String
+  user       User     @relation(fields: [userId], references: [id])
+  revoked    Boolean  @default(false)
+  replacedBy String?
+  createdAt  DateTime @default(now())
+  expiresAt  DateTime
+}
+
+model DoctorSchedule {
+  id         String   @id @default(uuid())
+  doctorId   String
+  doctor     Doctor   @relation(fields: [doctorId], references: [id])
+  dayOfWeek  Int
+  startTime  String
+  endTime    String
+  isActive   Boolean  @default(true)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
 }
