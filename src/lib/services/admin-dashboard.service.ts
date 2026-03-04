@@ -80,7 +80,7 @@ export class AdminDashboardService {
     const deptMap = new Map(departments.map(d => [d.id, d.name]));
 
     const departmentDistribution = appointmentsByDept.map(item => ({
-        name: deptMap.get(item.departmentId) || 'Unknown',
+        name: (item.departmentId && deptMap.get(item.departmentId)) || 'Unknown',
         value: item._count.id
     })).sort((a, b) => b.value - a.value).slice(0, 5); // Top 5
 

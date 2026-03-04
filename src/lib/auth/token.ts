@@ -13,6 +13,7 @@ export interface JWTPayload {
   role: string;
   status: string;
   email?: string;
+  [key: string]: unknown;
 }
 
 function isJWTPayload(payload: JoseJWTPayload): payload is JWTPayload {

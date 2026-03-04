@@ -329,7 +329,7 @@ export default function AppointmentDetailsPage() {
               <div>
                 <p className="text-sm text-gray-500">Email</p>
                 <p className="font-medium text-gray-900">
-                  {appointment.patient.user.email}
+                  {appointment.patient.email}
                 </p>
               </div>
               <div>

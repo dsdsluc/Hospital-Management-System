@@ -348,7 +348,13 @@ export class AppointmentService {
     }
 
     if (departmentId) where.departmentId = departmentId;
-    if (status) where.status = status;
+    if (status) {
+      if (status === "BOOKED") {
+        where.status = "CONFIRMED";
+      } else {
+        where.status = status as AppointmentStatus;
+      }
+    }
     if (doctorId) where.doctorId = doctorId;
     if (patientId) where.patientId = patientId;
 
@@ -393,8 +399,8 @@ export class AppointmentService {
           specialization: apt.doctor.specialization,
         },
         department: {
-          id: apt.department.id,
-          name: apt.department.name,
+          id: apt.department?.id ?? "",
+          name: apt.department?.name ?? "Unknown Department",
         },
       })),
       pagination: {

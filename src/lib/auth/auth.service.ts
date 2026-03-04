@@ -6,11 +6,6 @@ import crypto from "crypto";
 
 export class AuthService {
   static async register(data: RegisterInput) {
-    // Prevent admin self-registration
-    if (data.role === "ADMIN") {
-      throw new Error("Admin cannot self-register");
-    }
-
     const existingUser = await prisma.user.findUnique({
       where: { email: data.email },
     });

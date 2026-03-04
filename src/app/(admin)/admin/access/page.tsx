@@ -158,7 +158,7 @@ export default function AccessControlPage() {
     {
       key: "lastLoginAt" as keyof UserAccess,
       header: "Last Login",
-      render: (date: string) => (
+      render: (date: string | null, _user: UserAccess) => (
         <span className="text-slate-500 text-sm">
           {date ? new Date(date).toLocaleDateString() : "Never"}
         </span>

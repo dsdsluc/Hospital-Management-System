@@ -165,11 +165,9 @@ export class DoctorAppointmentService {
         // Let's assume strict enforcement: Must be IN_PROGRESS.
         // But for development ease, maybe allow CONFIRMED?
         // Let's stick to IN_PROGRESS as per prompt "IN_PROGRESS -> COMPLETED"
-        if (appointment.status !== "IN_PROGRESS") {
-          throw new Error(
-            `Appointment must be IN_PROGRESS to complete. Current: ${appointment.status}`,
-          );
-        }
+        throw new Error(
+          `Appointment must be IN_PROGRESS to complete. Current: ${appointment.status}`,
+        );
       }
 
       // 1. Update Appointment Status using Service logic (re-implemented here for transaction safety with MedicalRecord)

@@ -11,9 +11,20 @@ export class DoctorDashboardService {
     if (!doctor) throw new Error("Doctor not found");
 
     const now = new Date();
-    const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-    const todayEnd = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59);
-    
+    const todayStart = new Date(
+      now.getFullYear(),
+      now.getMonth(),
+      now.getDate(),
+    );
+    const todayEnd = new Date(
+      now.getFullYear(),
+      now.getMonth(),
+      now.getDate(),
+      23,
+      59,
+      59,
+    );
+
     const weekStart = new Date(now);
     weekStart.setDate(now.getDate() - now.getDay());
     weekStart.setHours(0, 0, 0, 0);
@@ -23,7 +34,7 @@ export class DoctorDashboardService {
       pendingConfirmations,
       completedThisWeek,
       totalActivePatients,
-      todaysSchedule
+      todaysSchedule,
     ] = await Promise.all([
       // 1. Today's Appointments Count
       prisma.appointment.count({
@@ -55,16 +66,18 @@ export class DoctorDashboardService {
       }),
 
       // 4. Total Active Patients (Unique patients seen by this doctor)
-      // Since we don't have a direct link table for "Active Patients", 
+      // Since we don't have a direct link table for "Active Patients",
       // we count unique patient IDs from appointments that weren't cancelled.
-      prisma.appointment.groupBy({
-        by: ['patientId'],
-        where: {
-          doctorId: doctor.id,
-          status: { not: "CANCELLED" },
-          deletedAt: null,
-        },
-      }).then(groups => groups.length),
+      prisma.appointment
+        .groupBy({
+          by: ["patientId"],
+          where: {
+            doctorId: doctor.id,
+            status: { not: "CANCELLED" },
+            deletedAt: null,
+          },
+        })
+        .then((groups) => groups.length),
 
       // 5. Today's Schedule (List)
       prisma.appointment.findMany({
@@ -92,13 +105,21 @@ export class DoctorDashboardService {
         completedThisWeek,
         totalActivePatients,
       },
-      todaysSchedule: todaysSchedule.map(apt => ({
+      todaysSchedule: todaysSchedule.map((apt) => ({
         id: apt.id,
-        time: apt.scheduledAt.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+        time: apt.scheduledAt.toLocaleTimeString([], {
+          hour: "2-digit",
+          minute: "2-digit",
+        }),
         patientName: apt.patient.name,
-        department: apt.department.name,
+        department: apt.department?.name || "Unknown",
         status: apt.status,
-        avatar: apt.patient.name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2),
+        avatar: apt.patient.name
+          .split(" ")
+          .map((n) => n[0])
+          .join("")
+          .toUpperCase()
+          .slice(0, 2),
       })),
     };
   }

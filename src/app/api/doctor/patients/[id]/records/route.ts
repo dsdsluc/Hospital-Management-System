@@ -10,7 +10,7 @@ import { z } from "zod";
 const createRecordSchema = z.object({
   diagnosis: z.string().min(1, "Diagnosis is required"),
   allergies: z.string().optional(),
-  vitals: z.record(z.any()).optional(),
+  vitals: z.record(z.string(), z.any()).optional(),
   filesRef: z.string().optional(),
 });
 
