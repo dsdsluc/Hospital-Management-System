@@ -52,8 +52,6 @@ export class DoctorService {
       prisma.doctor.count({ where }),
     ]);
 
-    console.log(`DoctorService.getDoctors found ${doctors.length} doctors, total count: ${total}`);
-
     return {
       data: doctors.map((doctor) => ({
         id: doctor.id,

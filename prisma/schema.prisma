@@ -134,6 +134,11 @@ model Appointment {
   updatedAt    DateTime @updatedAt
   deletedAt    DateTime?
   cancelledAt  DateTime?
+  checkedInAt  DateTime?
+  startedAt    DateTime?
+  completedAt  DateTime?
+  cancelledById String?
+  cancellationReason String?
   
   visit        Visit?
 }
@@ -148,6 +153,8 @@ model Visit {
   diagnosis     String?
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
+  startedAt     DateTime?
+  endedAt       DateTime?
 }
 
 model MedicalRecord {
@@ -160,16 +167,24 @@ model MedicalRecord {
   encounterDate DateTime
   notes         String?
   vitals        Json?
+  allergies     Json?
+  filesRef      Json?
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
+  deletedAt     DateTime?
+
+  prescriptions Prescription[]
+  testResults   TestResult[]
 }
 
 model TestResult {
   id            String   @id @default(uuid())
   patientId     String
   doctorId      String?
+  medicalRecordId String?
   patient       Patient  @relation(fields: [patientId], references: [id])
-  doctor        Doctor?  @relation(fields: [doctorId], references: [id])
+  orderedByDoctor Doctor?  @relation(fields: [doctorId], references: [id])
+  medicalRecord MedicalRecord? @relation(fields: [medicalRecordId], references: [id])
   
   type          String
   resultSummary String?
@@ -178,18 +193,22 @@ model TestResult {
   
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
+  deletedAt     DateTime?
 }
 
 model Prescription {
   id        String   @id @default(uuid())
   patientId String
   doctorId  String
+  medicalRecordId String?
   patient   Patient  @relation(fields: [patientId], references: [id])
   doctor    Doctor   @relation(fields: [doctorId], references: [id])
+  medicalRecord MedicalRecord? @relation(fields: [medicalRecordId], references: [id])
   medications Json?
   instructions String?
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
+  deletedAt  DateTime?
 }
 
 model Session {

@@ -161,7 +161,7 @@ export class MedicalRecordService {
         data: {
           medicalRecordId: record.id,
           patientId: data.patientId,
-          orderedByDoctorId: data.orderedByDoctorId,
+          doctorId: data.orderedByDoctorId,
           type: data.type,
           resultSummary: data.resultSummary,
           reportedAt: data.reportedAt,

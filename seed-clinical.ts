@@ -83,7 +83,7 @@ async function main() {
       data: {
         medicalRecordId: record.id,
         patientId: patient.id,
-        orderedByDoctorId: doctor.id,
+        doctorId: doctor.id,
         type: testTypes[Math.floor(Math.random() * testTypes.length)],
         resultSummary: "Values within normal range. No anomalies detected.",
         reportedAt: new Date(),

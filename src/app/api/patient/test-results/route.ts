@@ -75,7 +75,7 @@ export async function GET(request: AuthenticatedRequest) {
       id: result.id,
       testName: result.type,
       date: result.reportedAt,
-      orderedBy: result.orderedByDoctor.name,
+      orderedBy: result.orderedByDoctor?.name || "Unknown",
       status: "normal", // Placeholder logic
       summary: result.resultSummary || "Pending analysis.",
     }));
